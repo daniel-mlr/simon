@@ -140,15 +140,22 @@ $(function() {
 /*************** SVG ****************/
 
 var draw = SVG('simon').size("100%", "100%").viewbox(0,0, 200, 200);
+
+function touchedNote(){
+    console.log('note jouée:', this.position());
+}
+
+// paramétrer path
 var dm_arc = draw.path( 'M100 10 A 90 90 0 0 1 190 100' +
         'L 140 100 A 40 40 0 0 0 100 60 Z'
         ).stroke({color: 'black', opacity: 1, width: 5 })
-.fill('green').click(function() {console.log('cliqué vert');})
+// .fill('green').click(function() {console.log('cliqué vert');})
+.fill('green').click(touchedNote) 
 .style('cursor', 'pointer');
 
-dm_arc.clone().rotate(90, 100, 100).fill('yellow');
-dm_arc.clone().rotate(180, 100, 100).fill('blue');
-dm_arc.clone().rotate(270, 100, 100).fill('red');
+dm_arc.clone().rotate(90, 100, 100).fill('yellow').click(touchedNote);
+dm_arc.clone().rotate(180, 100, 100).fill('blue').click(touchedNote);
+dm_arc.clone().rotate(270, 100, 100).fill('red').click(touchedNote);
 
 draw.text('Simon').font({family: 'Impact', size: 12}).move(85, 67);
 
