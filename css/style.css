@@ -1,2 +1,6 @@
 html  {
 }
+#simon {
+    background-color: lightgray;
+    max-width: 600px;
+}

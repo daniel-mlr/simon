@@ -1,42 +1,5 @@
-var Simon = (function() {
-    "use strict";
-    var self = {};
-
-
-    // variables privées
-    var setting = {
-        nb_key: 4,
-        difficulty: 20
-    };
-    song = "";
-    lengthPlayed = 0;
-
-
-    // méthodes publiques
-   
-    self.playNote = function(notePlayed) { 
-        // note just keyed
-        // return scores {rightOne, actual, highest}
-    };
-   
-    self.init = function(setting) {
-        // if (typeof setting === 'undefined') {
-        console.log(setting);
-        if (lengthPlayed) {
-            alert('This will reset the current game');
-        }
-    };
-    
-    self.playNote = function() { };
-    self.playNote = function() { };
-
-    // méthodes privées
-    generateSong = function(len) {
-    };
-
-});
-
 var Media = (function() {
+    'use strict';
     var self = {};
     
     // variables privées
@@ -45,6 +8,187 @@ var Media = (function() {
    
     // méthodes publiques
     self.playBackOne = function(note) {
+        // visualisation de la clé pressée
+        // son renvoyé
+        console.log('la note qui est renvoyée (playBackOne):', note);
+        // durée, jusqu'à 'onUnclick'
+    };
+   
+    self.playSong = function(notes) {
+        console.log('je joue les notes', notes);
+    };
+   
+    self.showMessage = function(message) {
+        console.log(message);
     };
 
-})(jQuery);
+    self.buzzer = function() {
+        console.log('Buzzer ring!');
+    };
+    self.victory = function() {
+        console.log('It\'s a victory!');
+    };
+
+    self.initKeyBoard = function(nb_keys){
+        // cercle avec angles variant selon nombre de clés à accomoder
+    };
+
+
+    return self;
+})();
+
+var Simon = (function() {
+    'use strict';
+
+    var self = {};
+
+    // variables privées
+    var setting = {
+        nb_keys: 4,
+        //difficulty: 20
+        difficulty: 5
+    };
+    var song = generateSong(setting.difficulty);
+    console.log('song:', typeof song, song);
+    
+    var currentChallenge = 1;
+    var lengthPlayed = 0;
+    
+    // console.log('song partial:', song.slice(0, currentChallenge));
+
+    Media.playSong(song.slice(0, currentChallenge));
+
+    // méthodes publiques
+   
+    self.playNote = function(notePlayed) { 
+        // input: note just keyed
+        // increase challenge and announce it if notePlayed is correct
+        // sound buzzer and reset challenge to 1 if not
+
+
+        if (notePlayed === song[lengthPlayed]) { // note jouée correcte
+            Media.playBackOne(notePlayed);
+            lengthPlayed += 1;
+            if (lengthPlayed === currentChallenge) {
+                console.log('currentChallenge atteint', currentChallenge);
+                currentChallenge += 1;
+                lengthPlayed = 0;
+                if (currentChallenge > song.length) {
+                    Media.victory();
+                } else {
+                    // console.log('appel de playSong(song.slice(0,' + currentChallenge + '))', song.slice(0, currentChallenge));
+                    Media.playSong(song.slice(0, currentChallenge));
+                }
+            }
+        } else {
+            Media.buzzer();
+            // reset ?
+            lengthPlayed = 0;
+        }
+    };
+    
+    self.incrementDifficulty = function() {
+        setting.difficulty += 1; 
+        return setting.difficulty;
+    };
+    
+    self.decrementDifficulty = function() {
+        if (setting.difficulty > 2) {
+            setting.difficulty -= 1; 
+        } else {
+            Media.showMessage('Cannot go easier than that!');
+        }
+        return setting.dificulty;
+    };
+
+    self.incrementKeys = function() { 
+        if (setting.nb_keys < 8) {
+            setting.nb_keys += 1;
+            Media.initKeyBoard(setting.nb_keys);
+        } else {
+            Media.showMessage('This is the maximum number of keys.');
+        }
+    };
+    self.decrementKeys = function() { 
+        if (setting.nb_keys > 4) {
+            setting.nb_keys -= 1;
+            Media.initKeyBoard(setting.nb_keys);
+        } else {
+            Media.showMessage('The minimum number of keys is 4.');
+        }
+    };
+
+    // méthodes privées
+    function generateSong(len) {
+        var s = '';
+        while(len) {
+            s += Math.floor(Math.random() * setting.nb_keys);
+            len--;
+        }
+        return s;
+    }
+
+    return self;
+})();
+
+// inutile?
+$(function() {
+//    Simon.test();
+});
+
+
+/*************** SVG ****************/
+
+var draw = SVG('simon').size("100%", "100%").viewbox(0,0, 200, 200);
+var dm_arc = draw.path( 'M100 10 A 90 90 0 0 1 190 100' +
+        'L 140 100 A 40 40 0 0 0 100 60 Z'
+        ).stroke({color: 'black', opacity: 1, width: 5 })
+.fill('green').click(function() {console.log('cliqué vert');})
+.style('cursor', 'pointer');
+
+dm_arc.clone().rotate(90, 100, 100).fill('yellow');
+dm_arc.clone().rotate(180, 100, 100).fill('blue');
+dm_arc.clone().rotate(270, 100, 100).fill('red');
+
+draw.text('Simon').font({family: 'Impact', size: 12}).move(85, 67);
+
+// svg switch
+var toggleSwitch = draw.group();
+toggleSwitch.text('OFF').font({family: 'Impact', size: 7}).move(-11, 0.5);
+toggleSwitch.text('ON').font({family: 'Impact', size: 7}).move(21.5, 0.5);
+toggleSwitch.rect(20, 10).radius(2).fill('gray');
+var tip = toggleSwitch.group();
+tip.rect(8, 8).radius(1).stroke({color:'darkblue', width: 1}).fill('blue').move(1,1);
+var line = tip.line(3, 1, 3, 9).stroke({color: 'darkblue', opacity: 0.7, width: 1});
+tip.use(line).move(2,0);
+tip.use(line).move(4,0);
+toggleSwitch.move(90, 120);
+toggleSwitch.click(function() {
+    var pos;
+    if (tip.hasClass('on')) {
+        pos = 0;
+    } else {
+        pos = 10;
+    }
+    tip.animate(100, '<', 0).move(pos, 0);
+    tip.toggleClass('on');
+});
+
+// score
+var scoreBox = draw.group();
+scoreBox.rect(12, 12).radius(2).fill('#33060C').stroke({color: 'black', width: 1});
+scoreBox.text('12').font({family: 'Helvetica', size: 8}).
+stroke({color: 'red', width:0.5}).fill('red').move(1, 1.5);
+scoreBox.text('count').font({size: 8}).move(-4, 12);
+scoreBox.move(70, 94);
+
+var startButton = draw.group();
+startButton.circle(10).stroke({width: 2}).fill('red');
+startButton.text('start').font({size: 8}).move(-2.5, 11);
+startButton.move(95, 95);
+
+var strictButton = draw.group();
+strictButton.circle(2).stroke({width: 2}).move(4, -6);
+strictButton.circle(10).stroke({width: 2}).fill('yellow');
+strictButton.text('strict').font({size: 8}).move(-2.5, 11);
+strictButton.move(118, 95);
