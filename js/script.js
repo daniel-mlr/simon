@@ -139,23 +139,50 @@ $(function() {
 
 /*************** SVG ****************/
 
-var draw = SVG('simon').size("100%", "100%").viewbox(0,0, 200, 200);
+var vbox = 200;   // viewbox side length
+var padding = 10; // between outer circle and viewbox edge
+var outer_circle = vbox / 2 - padding; // outer circle radius
+var inner_circle = vbox / 4 - padding; // inner circle radius
+
+// experimental
+var nb_keys = 5;
+var theta = Math.PI * 2 / nb_keys;
+
+var colors = ['red', 'green', 'yellow', 'blue', 'cyan', 'magenta', 'pink'];
+
+var draw = SVG('simon').size("100%", "100%").viewbox(0,0, vbox, vbox);
 
 function touchedNote(){
     console.log('note jouée:', this.position());
 }
 
-// paramétrer path
-var dm_arc = draw.path( 'M100 10 A 90 90 0 0 1 190 100' +
-        'L 140 100 A 40 40 0 0 0 100 60 Z'
-        ).stroke({color: 'black', opacity: 1, width: 5 })
-// .fill('green').click(function() {console.log('cliqué vert');})
-.fill('green').click(touchedNote) 
-.style('cursor', 'pointer');
+// circles path coordinates delimiting the game pads
+var touch_path = 'M' + vbox/2 + ' ' + vbox/20 + 'A' + // starting point
+    outer_circle  + ' ' + outer_circle + ' 0 0 1 ' +  // arc parameters
+    (vbox/2 + Math.sin(theta) * (vbox/2 - padding)) + 
+    ' ' + (vbox/2 - Math.cos(theta) * (vbox/2 - padding)) +    //  "    "
+    'L' + (vbox/2 + Math.sin(theta) * inner_circle) + ' ' + 
+     (vbox/2 - Math.cos(theta) * inner_circle) +     // line to inner circle
+    'A' + inner_circle + ' ' + inner_circle + ' 0 0 0 ' +
+    vbox/2 + ' ' + (vbox/2 - inner_circle) + 'Z';
+ 
+console.log(touch_path);
 
-dm_arc.clone().rotate(90, 100, 100).fill('yellow').click(touchedNote);
-dm_arc.clone().rotate(180, 100, 100).fill('blue').click(touchedNote);
-dm_arc.clone().rotate(270, 100, 100).fill('red').click(touchedNote);
+// var dm_arc = draw.path( 'M100 10 A 90 90 0 0 1 190 100' +
+//         'L 140 100 A 40 40 0 0 0 100 60 Z'
+//         ).stroke({color: 'black', opacity: 1, width: 5 })
+var dm_arc = draw.path(touch_path).stroke({color: 'black', opacity: 1, width: 5 })
+// .fill('green').click(function() {console.log('cliqué vert');})
+.fill(colors[0]).click(touchedNote) 
+.style('cursor', 'pointer');
+for (var i = 1; i < nb_keys ; i++) {
+    console.log('itération: ', i);
+   dm_arc.clone().rotate(-i * 360 / nb_keys, 100, 100).fill(colors[i]).click(touchedNote);
+}
+// dm_arc.clone().rotate(1 * 360 / nb_keys, 100, 100).fill('yellow').click(touchedNote);
+// dm_arc.clone().rotate(2 * 360 / nb_keys, 100, 100).fill('blue').click(touchedNote);
+// dm_arc.clone().rotate(3 * 360 / nb_keys, 100, 100).fill('red').click(touchedNote);
+// dm_arc.clone().rotate(4 * 360 / nb_keys, 100, 100).fill('cyan').click(touchedNote);
 
 draw.text('Simon').font({family: 'Impact', size: 12}).move(85, 67);
 
