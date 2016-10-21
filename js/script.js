@@ -144,6 +144,8 @@ var padding = 10; // between outer circle and viewbox edge
 var outer_circle = vbox / 2 - padding; // outer circle radius
 var inner_circle = vbox / 4 - padding; // inner circle radius
 
+var led_on = '#EC1100';
+var led_off = '#70020B';
 // experimental
 var nb_keys = 4;
 var theta = Math.PI * 2 / nb_keys;
@@ -152,53 +154,91 @@ var colors = ['red', 'green', 'yellow', 'blue', 'cyan', 'magenta', 'pink'];
 
 var draw = SVG('simon').size("100%", "100%").viewbox(0,0, vbox, vbox);
 
-function touchedNote(){
-    console.log('note jouée:', this.position());
+function touchedNoteStart(){
+    console.log('note jouée - début:', this.position());
+    // (remplace playBackOne(note)
+}
+function touchedNoteEnd(){
+    console.log('note jouée - fin:', this.position());
+    // (remplace playBackOne(note)
+}
+
+function powerOn() {
+    console.log('Je joue une petite musique de bienvenue');
+    score_digits.stroke({color: led_on}).fill(led_on);
+    // pour test
+    score_digits.text('88');
+}
+
+function powerOff() {
+    console.log('J\'éteins les lumières');
+    mode_indicator.removeClass('strictMode');
+    score_digits.text('00');
+    score_digits.stroke({color: led_off}).fill(led_off);
+}
+function startPlay() {
+    console.log('je commence le jeu en jouant la première note ' +
+           'si le jeu n\'est pas déjà commencé! ');
+}
+
+function powerMeOnMessage() {
+    console.log('I am old style: Power me on first!');
+}
+
+function toggleMode() {
+    console.log('quel est le this:', this);
+    if (tip.hasClass('on')) {
+        mode_indicator.toggleClass('strictMode');
+    } else {
+        powerMeOnMessage();
+    }
 }
 
 // circles path coordinates delimiting the game pads
 var touch_path = 'M' + vbox/2 + ' ' + vbox/20 + 'A' + // starting point
     outer_circle  + ' ' + outer_circle + ' 0 0 1 ' +  // arc parameters
-    (vbox/2 + Math.sin(theta) * (vbox/2 - padding)) + 
-    ' ' + (vbox/2 - Math.cos(theta) * (vbox/2 - padding)) +    //  "    "
+    (vbox/2 + Math.sin(theta) * (vbox/2 - padding)) +       //  "    "
+    ' ' + (vbox/2 - Math.cos(theta) * (vbox/2 - padding)) + //  "    "
     'L' + (vbox/2 + Math.sin(theta) * inner_circle) + ' ' + 
      (vbox/2 - Math.cos(theta) * inner_circle) +     // line to inner circle
-    'A' + inner_circle + ' ' + inner_circle + ' 0 0 0 ' +
-    vbox/2 + ' ' + (vbox/2 - inner_circle) + 'Z';
+    'A' + inner_circle + ' ' + inner_circle + ' 0 0 0 ' + // arc parameter
+    vbox/2 + ' ' + (vbox/2 - inner_circle) + 'Z';         // for inner circle
  
-console.log(touch_path);
-
-// var dm_arc = draw.path( 'M100 10 A 90 90 0 0 1 190 100' +
-//         'L 140 100 A 40 40 0 0 0 100 60 Z'
-//         ).stroke({color: 'black', opacity: 1, width: 5 })
+// creation of the first key pad
 var dm_arc = draw.path(touch_path)
     .stroke({color: 'black', opacity: 1, width: 5 })
-    .fill(colors[0]).click(touchedNote) 
+    .fill(colors[0]).mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
+    .touchstart(touchedNoteStart).touchend(touchedNoteEnd)
     .style('cursor', 'pointer');
 
+// creation of other key pads
 for (var i = 1; i < nb_keys ; i++) {
-   dm_arc.clone().rotate(-i * 360 / nb_keys, 100, 100).fill(colors[i]).click(touchedNote);
+    dm_arc.clone().rotate(-i * 360 / nb_keys, 100, 100)
+        .fill(colors[i]).mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
+        .touchstart(touchedNoteStart).touchend(touchedNoteEnd);
 }
 
 draw.text('Simon').font({family: 'Impact', size: 12}).move(85, 67);
 
 // svg switch
-var toggleSwitch = draw.group();
-toggleSwitch.text('OFF').font({family: 'Impact', size: 7}).move(-11, 0.5);
-toggleSwitch.text('ON').font({family: 'Impact', size: 7}).move(21.5, 0.5);
-toggleSwitch.rect(20, 10).radius(2).fill('gray');
-var tip = toggleSwitch.group();
+var powerSwitch = draw.group();
+powerSwitch.text('OFF').font({family: 'Impact', size: 7}).move(-11, 0.5);
+powerSwitch.text('ON').font({family: 'Impact', size: 7}).move(21.5, 0.5);
+powerSwitch.rect(20, 10).radius(2).fill('gray');
+var tip = powerSwitch.group();
 tip.rect(8, 8).radius(1).stroke({color:'darkblue', width: 1}).fill('blue').move(1,1);
 var line = tip.line(3, 1, 3, 9).stroke({color: 'darkblue', opacity: 0.7, width: 1});
 tip.use(line).move(2,0);
 tip.use(line).move(4,0);
-toggleSwitch.move(90, 120);
-toggleSwitch.click(function() {
+powerSwitch.move(90, 120);
+powerSwitch.click(function() {
     var pos;
     if (tip.hasClass('on')) {
         pos = 0;
+        powerOff();
     } else {
         pos = 10;
+        powerOn();
     }
     tip.animate(100, '<', 0).move(pos, 0);
     tip.toggleClass('on');
@@ -207,18 +247,19 @@ toggleSwitch.click(function() {
 // score
 var scoreBox = draw.group();
 scoreBox.rect(12, 12).radius(2).fill('#33060C').stroke({color: 'black', width: 1});
-scoreBox.text('00').font({family: 'Helvetica', size: 8}).
-stroke({color: 'red', width:0.5}).fill('red').move(1.4, 1.5);
+var score_digits = scoreBox.text('00').font({family: 'Helvetica', size: 8}).
+    stroke({color: led_off, width:0.5}).fill(led_off).move(1.4, 1.5);
 scoreBox.text('count').font({size: 8}).move(-4, 12);
 scoreBox.move(70, 94);
 
 var startButton = draw.group();
-startButton.circle(10).stroke({width: 2}).fill('red');
+startButton.circle(10).stroke({width: 2}).fill('red').click(startPlay);
 startButton.text('start').font({size: 8}).move(-2.5, 11);
 startButton.move(95, 95);
 
 var strictButton = draw.group();
-strictButton.circle(2).stroke({width: 2}).move(4, -6);
-strictButton.circle(10).stroke({width: 2}).fill('yellow');
+var mode_indicator = strictButton.circle(2).move(4, -6)
+    .stroke({width: 2}).stroke({color: led_off});
+strictButton.circle(10).stroke({width: 2}).fill('yellow').click(toggleMode);
 strictButton.text('strict').font({size: 8}).move(-2.5, 11);
 strictButton.move(118, 95);

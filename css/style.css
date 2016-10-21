@@ -2,7 +2,9 @@ body  {
     background-color: lightgray;
 }
 #simon {
-    /*background-color: lightgray;*/
     max-width: 600px;
     margin: auto;
+}
+.strictMode {
+    stroke: #EC1100;
 }
