@@ -145,7 +145,7 @@ var outer_circle = vbox / 2 - padding; // outer circle radius
 var inner_circle = vbox / 4 - padding; // inner circle radius
 
 // experimental
-var nb_keys = 5;
+var nb_keys = 4;
 var theta = Math.PI * 2 / nb_keys;
 
 var colors = ['red', 'green', 'yellow', 'blue', 'cyan', 'magenta', 'pink'];
@@ -171,18 +171,14 @@ console.log(touch_path);
 // var dm_arc = draw.path( 'M100 10 A 90 90 0 0 1 190 100' +
 //         'L 140 100 A 40 40 0 0 0 100 60 Z'
 //         ).stroke({color: 'black', opacity: 1, width: 5 })
-var dm_arc = draw.path(touch_path).stroke({color: 'black', opacity: 1, width: 5 })
-// .fill('green').click(function() {console.log('cliqué vert');})
-.fill(colors[0]).click(touchedNote) 
-.style('cursor', 'pointer');
+var dm_arc = draw.path(touch_path)
+    .stroke({color: 'black', opacity: 1, width: 5 })
+    .fill(colors[0]).click(touchedNote) 
+    .style('cursor', 'pointer');
+
 for (var i = 1; i < nb_keys ; i++) {
-    console.log('itération: ', i);
    dm_arc.clone().rotate(-i * 360 / nb_keys, 100, 100).fill(colors[i]).click(touchedNote);
 }
-// dm_arc.clone().rotate(1 * 360 / nb_keys, 100, 100).fill('yellow').click(touchedNote);
-// dm_arc.clone().rotate(2 * 360 / nb_keys, 100, 100).fill('blue').click(touchedNote);
-// dm_arc.clone().rotate(3 * 360 / nb_keys, 100, 100).fill('red').click(touchedNote);
-// dm_arc.clone().rotate(4 * 360 / nb_keys, 100, 100).fill('cyan').click(touchedNote);
 
 draw.text('Simon').font({family: 'Impact', size: 12}).move(85, 67);
 
@@ -211,8 +207,8 @@ toggleSwitch.click(function() {
 // score
 var scoreBox = draw.group();
 scoreBox.rect(12, 12).radius(2).fill('#33060C').stroke({color: 'black', width: 1});
-scoreBox.text('12').font({family: 'Helvetica', size: 8}).
-stroke({color: 'red', width:0.5}).fill('red').move(1, 1.5);
+scoreBox.text('00').font({family: 'Helvetica', size: 8}).
+stroke({color: 'red', width:0.5}).fill('red').move(1.4, 1.5);
 scoreBox.text('count').font({size: 8}).move(-4, 12);
 scoreBox.move(70, 94);
 

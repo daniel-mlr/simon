@@ -1,6 +1,8 @@
-html  {
+body  {
+    background-color: lightgray;
 }
 #simon {
-    background-color: lightgray;
+    /*background-color: lightgray;*/
     max-width: 600px;
+    margin: auto;
 }
