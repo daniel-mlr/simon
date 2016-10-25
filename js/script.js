@@ -3,6 +3,7 @@ var Media = (function() {
     var self = {};
     
     // variables publiques  
+
     self.notes = [];
     var instrument = 'sax';
     // var gamut = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
@@ -20,19 +21,23 @@ var Media = (function() {
     }
     
     // variables privées
+   
     var playBackLength = '1000'; // lenght of playback tone for each note
    
     
     // méthodes publiques
    
-    self.playSong = function(song, note_duration) {
+    self.playSong = function(song, note_duration, gap) {
+        /* play a serie of notes (in string song) in sequence */
         var note = song.slice(0,1);
-        self.notes[note].play();
+        setTimeout(function() {
+            self.notes[note].play();
+        }, gap);
         setTimeout(function() {
            self.notes[note].stop();
            if ( song.length > 1 ) {
                song = song.slice(1, song.length);
-               self.playSong(song, note_duration);
+               self.playSong(song, note_duration, gap);
            }
         }, note_duration);
     };
@@ -77,7 +82,7 @@ var Simon = (function() {
     // méthodes publiques
    
     self.startGame = function(){
-        Media.playSong(song.slice(0, currentChallenge));
+        Media.playSong(song.slice(0, currentChallenge), 1000, 200);
     };
    
     self.playNote = function(notePlayed) { 
@@ -95,8 +100,7 @@ var Simon = (function() {
                 if (currentChallenge > song.length) {
                     Media.victory();
                 } else {
-                    // console.log('appel de playSong(song.slice(0,' + currentChallenge + '))', song.slice(0, currentChallenge));
-                    Media.playSong(song.slice(0, currentChallenge));
+                    Media.playSong(song.slice(0, currentChallenge), 1000, 200);
                 }
             }
         } else {
@@ -125,7 +129,7 @@ var Simon = (function() {
             setting.nb_keys += 1;
             Media.initKeyBoard(setting.nb_keys);
         } else {
-            Media.showMessage('This is the maximum number of keys.');
+            Media.showMessage('The maximum number of keys is 7.');
         }
     };
     self.decrementKeys = function() { 
@@ -150,11 +154,11 @@ var Simon = (function() {
     return self;
 })();
 
-// inutile?
+/* inutile?
 $(function() {
 //    Simon.test();
 });
-
+*/
 
 /*************** SVG ****************/
 
@@ -207,11 +211,15 @@ var DrawSVG = (function(){
     function startPlay() {
         console.log('je commence le jeu en jouant la première note ' +
                'si le jeu n\'est pas déjà commencé! ');
-        Simon.startGame();
+        if (tip.hasClass('on')) {
+            Simon.startGame();
+        } else {
+            powerMeOnMessage();
+        }
     }
 
     function powerMeOnMessage() {
-        console.log('I am old style: Power me on first!');
+        alertify.alert('I am old style: Power me on first!');
     }
 
     function toggleMode() {
