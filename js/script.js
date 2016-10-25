@@ -2,34 +2,41 @@ var Media = (function() {
     'use strict';
     var self = {};
     
+    // variables publiques  
+    self.notes = [];
+    var instrument = 'sax';
+    // var gamut = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
+    var gamut = ['c', 'd', 'e', 'f'];
+    for(var i=0, l = gamut.length; i<l; i++){
+        self.notes.push(new Howl({
+            src: [
+                'media/' + instrument + '-' + gamut[i] + '.ogg', 
+                'media/' + instrument + '-' + gamut[i] + '.mp3', 
+                'media/' + instrument + '-' + gamut[i] + '.webm', 
+            ],
+            autoplay: false,
+            loop: true
+        }));
+    }
+    
     // variables privées
     var playBackLength = '1000'; // lenght of playback tone for each note
    
+    
     // méthodes publiques
-    self.playBackNote = function(note, note_duration) {
-        // visualisation de la clé pressée
-        // son renvoyé
-        console.log('playBackNote:', note);
-        // durée, jusqu'à 'mouseout'
-    };
    
-    self.stopPlayBackNote = function(){
-    };
-  
-    function sustain_note(note_duration){
-        setTimeout(function () { 
-            self.stopPlayBackNote();
+    self.playSong = function(song, note_duration) {
+        var note = song.slice(0,1);
+        self.notes[note].play();
+        setTimeout(function() {
+           self.notes[note].stop();
+           if ( song.length > 1 ) {
+               song = song.slice(1, song.length);
+               self.playSong(song, note_duration);
+           }
         }, note_duration);
-    }
-   
-    self.playSong = function(notes, note_duration) {
-        for (var note=0; note< notes.length; note++){
-            self.playBackNote(note);
-            sustain_note(note_duration);
-        }
-        console.log('je joue les notes', notes);
     };
-   
+
     self.showMessage = function(message) {
         console.log(message);
     };
@@ -168,44 +175,20 @@ var DrawSVG = (function(){
     var draw = SVG('simon').size("100%", "100%").viewbox(0,0, vbox, vbox);
 
     drawKeys(4);
-
-    var sound = new Howl({
-        src: ['media/sax-c.ogg', 'media/organ-c3.mp3'],
-        autoplay: false,
-        loop: true
-    });
-    
+   
     function touchedNoteStart(){
         console.log('note jouée - début:', this.position());
-        // (remplace playBackOne(note)
-        sound.play();
         
-        /*
-        var monson = new Howl({
-            urls: ['../media/sax-c.ogg', '../media/organ-c3.mp3'],
-            autoplay: false,
-            loop: true
-        });
-        
-        monson = document.getElementById("oc");
-        monson.loop = true;
-        console.log("monson:", monson);
-        monson.addEventListener('timeupdate', function(){
-            var buffer = 0.6;
-            console.log(this.duration);
-            if (this.currentTime / this.duration > 0.6) {
-                this.currentTime = 0;
-                this.play();
-            }
-        }, false);
-        monson.play();
-        */
+        if (tip.hasClass("on")) {
+            Media.notes[this.position() - 1].play();
+        } else {
+            powerMeOnMessage();
+        }
     }
+    
     function touchedNoteEnd(){
         console.log('note jouée - fin:', this.position());
-        // (remplace playBackOne(note)
-        // monson.pause();
-        sound.stop();
+        Media.notes[this.position() - 1].stop();
     }
 
     function powerOn() {
@@ -325,14 +308,3 @@ var DrawSVG = (function(){
     strictButton.move(118, 95);
 
 })();
-
-/* test
-function doSetTimeOut(i) {
-    setTimeout(function() {
-        console.log(i);
-    }, i*1000);
-}
-for (var i = 1; i < 10; i++) {
-    doSetTimeOut(i);
-}
-*/
