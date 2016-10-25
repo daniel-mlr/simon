@@ -6,7 +6,7 @@ var Media = (function() {
     var playBackLength = '1000'; // lenght of playback tone for each note
    
     // méthodes publiques
-    self.playBackNote = function(note) {
+    self.playBackNote = function(note, note_duration) {
         // visualisation de la clé pressée
         // son renvoyé
         console.log('playBackNote:', note);
@@ -15,10 +15,17 @@ var Media = (function() {
    
     self.stopPlayBackNote = function(){
     };
+  
+    function sustain_note(note_duration){
+        setTimeout(function () { 
+            self.stopPlayBackNote();
+        }, note_duration);
+    }
    
-    self.playSong = function(notes, duration) {
+    self.playSong = function(notes, note_duration) {
         for (var note=0; note< notes.length; note++){
             self.playBackNote(note);
+            sustain_note(note_duration);
         }
         console.log('je joue les notes', notes);
     };
@@ -162,13 +169,43 @@ var DrawSVG = (function(){
 
     drawKeys(4);
 
+    var sound = new Howl({
+        src: ['media/sax-c.ogg', 'media/organ-c3.mp3'],
+        autoplay: false,
+        loop: true
+    });
+    
     function touchedNoteStart(){
         console.log('note jouée - début:', this.position());
         // (remplace playBackOne(note)
+        sound.play();
+        
+        /*
+        var monson = new Howl({
+            urls: ['../media/sax-c.ogg', '../media/organ-c3.mp3'],
+            autoplay: false,
+            loop: true
+        });
+        
+        monson = document.getElementById("oc");
+        monson.loop = true;
+        console.log("monson:", monson);
+        monson.addEventListener('timeupdate', function(){
+            var buffer = 0.6;
+            console.log(this.duration);
+            if (this.currentTime / this.duration > 0.6) {
+                this.currentTime = 0;
+                this.play();
+            }
+        }, false);
+        monson.play();
+        */
     }
     function touchedNoteEnd(){
         console.log('note jouée - fin:', this.position());
         // (remplace playBackOne(note)
+        // monson.pause();
+        sound.stop();
     }
 
     function powerOn() {
@@ -289,3 +326,13 @@ var DrawSVG = (function(){
 
 })();
 
+/* test
+function doSetTimeOut(i) {
+    setTimeout(function() {
+        console.log(i);
+    }, i*1000);
+}
+for (var i = 1; i < 10; i++) {
+    doSetTimeOut(i);
+}
+*/
