@@ -32,9 +32,11 @@ var Media = (function() {
         var note = song.slice(0,1);
         setTimeout(function() {
             self.notes[note].play();
+            DrawSVG.turnOnLightKey(note);
         }, gap);
         setTimeout(function() {
-           self.notes[note].stop();
+            self.notes[note].stop();
+            DrawSVG.turnOffLightKey(note);
            if ( song.length > 1 ) {
                song = song.slice(1, song.length);
                self.playSong(song, note_duration, gap);
@@ -65,20 +67,38 @@ var Simon = (function() {
     // variables privées
     var setting = {
         nb_keys: 4,
-        //difficulty: 20
         difficulty: 5
     };
-    var song = generateSong(setting.difficulty);
-    console.log('song:', typeof song, song);
-    
-    var currentChallenge = 1;
-    var lengthPlayed = 0;
-    
+    var game_started = false;
+    var song, currentChallenge, lengthPlayed;
+
+    // initialise game
+    initialise();
+
+    function initialise() {
+        song = generateSong(setting.difficulty);
+        console.log('song:', typeof song, song);
+        
+        currentChallenge = 1;
+        lengthPlayed = 0;
+    }
+   
 
     // méthodes publiques
    
     self.startGame = function(){
-        Media.playSong(song.slice(0, currentChallenge), 1000, 200);
+        if (game_started) {
+            console.log('rcommencer le jeu?');
+            alertify.confirm('This will reinitialise the game', function(e) {
+                if (e) {
+                    initialise();
+                    Media.playSong(song.slice(0, currentChallenge), 1000, 200);
+                }
+            });
+        } else {
+            game_started = true;
+            Media.playSong(song.slice(0, currentChallenge), 1000, 200);
+        }
     };
    
     self.playNote = function(notePlayed) { 
@@ -86,8 +106,14 @@ var Simon = (function() {
         // increase challenge and announce it if notePlayed is correct
         // sound buzzer and reset challenge to 1 if not
 
+        if (!game_started) {
+            alertify.alert('Press the red button \'start\' to begin the game');
+            return;
+        }
+
+        notePlayed = notePlayed.toString();
+       
         if (notePlayed === song[lengthPlayed]) { // note jouée correcte
-            Media.playBackOne(notePlayed);
             lengthPlayed += 1;
             if (lengthPlayed === currentChallenge) {
                 console.log('currentChallenge atteint', currentChallenge);
@@ -104,6 +130,7 @@ var Simon = (function() {
             // reset ? depend du mode strict
             lengthPlayed = 0;
         }
+        return;
     };
     
     self.incrementDifficulty = function() {
@@ -121,20 +148,22 @@ var Simon = (function() {
     };
 
     self.incrementKeys = function() { 
-        if (setting.nb_keys < 8) {
+        if (setting.nb_keys < 7) {
             setting.nb_keys += 1;
-            Media.initKeyBoard(setting.nb_keys);
+            DrawSVG.reDrawKeys(setting.nb_keys); 
         } else {
-            Media.showMessage('The maximum number of keys is 7.');
+            alertify.error('The Maximum number of keys is 7.');
         }
+        return setting.nb_keys;
     };
     self.decrementKeys = function() { 
-        if (setting.nb_keys > 4) {
+        if (setting.nb_keys > 3) {
             setting.nb_keys -= 1;
-            Media.initKeyBoard(setting.nb_keys);
+            DrawSVG.reDrawKeys(setting.nb_keys); 
         } else {
-            Media.showMessage('The minimum number of keys is 4.');
+            alertify.error('The minimum number of keys is 3.');
         }
+        return setting.nb_keys;
     };
 
     // méthodes privées
@@ -180,6 +209,9 @@ var DrawSVG = (function(){
 
     var nb_keys;
     
+    var arcs = draw.group();
+    console.log('arcs défini', arcs);
+    
     // initialisation
     drawKeys(4);
 
@@ -189,6 +221,15 @@ var DrawSVG = (function(){
         } else {
             throw 'nb keys must be between 3 and 7';
         }
+    };
+
+    self.turnOnLightKey = function(nkey){
+        console.log('a allumer, clé', nkey, arcs.get(nkey));
+        arcs.get(nkey).fill(light_colors[nkey]);
+    };
+    
+    self.turnOffLightKey = function(nkey){
+        arcs.get(nkey).fill(colors[nkey]);
     };
    
     function touchedNoteStart(){
@@ -206,7 +247,9 @@ var DrawSVG = (function(){
     function touchedNoteEnd(){
         console.log('note jouée - fin:', this.position());
         Media.notes[this.position()].stop();
-       this.fill(colors[this.position()]);
+        this.fill(colors[this.position()]);
+        Simon.playNote(this.position());
+        console.log('je sors de Simon');
     }
 
     function powerOn() {
@@ -223,8 +266,6 @@ var DrawSVG = (function(){
         score_digits.stroke({color: led_off}).fill(led_off);
     }
     function startPlay() {
-        console.log('je commence le jeu en jouant la première note ' +
-               'si le jeu n\'est pas déjà commencé! ');
         if (tip.hasClass('on')) {
             Simon.startGame();
         } else {
@@ -243,15 +284,10 @@ var DrawSVG = (function(){
             powerMeOnMessage();
         }
     }
-
+    
     function drawKeys(nb) {
         /* draw the key pads in circle */
-       
-        console.log('debut:',  arcs === undefined);
-
-        if (arcs !== undefined) {
-            arcs.remove();
-        }
+        arcs.clear();
         nb_keys = nb;
         
         var theta = Math.PI * 2 / nb;
@@ -267,47 +303,20 @@ var DrawSVG = (function(){
             center + ' ' + (center - inner_circle) + 'Z';         // for inner circle
    
         // creation of the first key pad
-        var arcs = draw.group();
         var dm_arc = arcs.path(touch_path)
             .stroke({color: 'black', opacity: 1, width: 5 })
-            // .fill(colors[0]).mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
             .fill({color: colors[0], opacity: 1})
             .mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
             .touchstart(touchedNoteStart).touchend(touchedNoteEnd)
             .style('cursor', 'pointer');
     
         // creation of the other key pads
-        // for (var i = 1; i < nb ; i++) {
         for (var i = nb - 1; i > 0 ; i--) {
             dm_arc.clone().rotate(-i * 360 / nb, center, center)
                 .fill(colors[i]).mousedown(touchedNoteStart)
                 .mouseup(touchedNoteEnd).touchstart(touchedNoteStart)
                 .touchend(touchedNoteEnd);
         }
-        
-        /*
-        // creation of the first key pad
-        var dm_arc = draw.path(touch_path)
-            .stroke({color: 'black', opacity: 1, width: 5 })
-            // .fill(colors[0]).mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
-            .fill({color: colors[0], opacity: 1})
-            .mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
-            .touchstart(touchedNoteStart).touchend(touchedNoteEnd)
-            .style('cursor', 'pointer');
-    
-        // creation of the other key pads
-        // for (var i = 1; i < nb ; i++) {
-        for (var i = nb - 1; i > 0 ; i--) {
-            dm_arc.clone().rotate(-i * 360 / nb, center, center)
-                .fill(colors[i]).mousedown(touchedNoteStart)
-                .mouseup(touchedNoteEnd).touchstart(touchedNoteStart)
-                .touchend(touchedNoteEnd);
-        }
-        */
-        
-        console.log('fin:',  arcs === undefined);
-        // console.log('fin: draw has arcs', draw.has(arcs));
-   
     }
      
 
@@ -375,29 +384,10 @@ window.onload = function() {
     var level = document.getElementById('level');
 
     /*
-    changeVal = function(direction, el, limit) {
-        var obj = document.gegElementById(el);
-        var elValue = parseInt(el.innerHTML);
-        console.log('dans changeVal', el, elValue, el.innerHTML);
-        if (direction === 'increase') {
-            if (elValue >= limit) {
-                console.log('message maximum atteint');
-            } else {
-                el.innerHTML = parseInt(elValue) + 1;
-            }
-        } else if (direction === 'decrease') {
-            if (elValue <= limit) {
-                console.log('message minimum atteint');
-            } else {
-                el.innerHTML = parseInt(elValue) - 1;
-            }
-        }
-    };
-    */
-   
     increaseKeys.onclick = function() {
         if (nbKeys.innerHTML >= 7) {
             console.log('message: maximum atteint');
+            alertify.error("Maximum number of keys is 7");
         } else {
             nbKeys.innerHTML = parseInt(nbKeys.innerHTML) + 1;
             DrawSVG.reDrawKeys(nbKeys.innerHTML); 
@@ -406,9 +396,13 @@ window.onload = function() {
     decreaseKeys.onclick = function() {
         if (nbKeys.innerHTML <= 3) {
             console.log('message: minimum atteint');
+            alertify.error("Minimum number of keys is 3");
         } else {
             nbKeys.innerHTML = parseInt(nbKeys.innerHTML) - 1;
             DrawSVG.reDrawKeys(nbKeys.innerHTML); 
         }
     };
+    */
+    increaseKeys.onclick = function(){nbKeys.innerHTML = Simon.incrementKeys();};
+    decreaseKeys.onclick = function(){nbKeys.innerHTML = Simon.decrementKeys();};
 };
