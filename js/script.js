@@ -6,8 +6,8 @@ var Media = (function() {
 
     self.notes = [];
     var instrument = 'sax';
-    // var gamut = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
-    var gamut = ['c', 'd', 'e', 'f'];
+    var gamut = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
+    // var gamut = ['c', 'd', 'e', 'f'];
     for(var i=0, l = gamut.length; i<l; i++){
         self.notes.push(new Howl({
             src: [
@@ -51,10 +51,6 @@ var Media = (function() {
     };
     self.victory = function() {
         console.log('It\'s a victory!');
-    };
-
-    self.initKeyBoard = function(nb_keys){
-        // cercle avec angles variant selon nombre de clés à accomoder
     };
 
     return self;
@@ -154,16 +150,17 @@ var Simon = (function() {
     return self;
 })();
 
-/* inutile?
-$(function() {
-//    Simon.test();
-});
-*/
 
-/*************** SVG ****************/
+/*******************************
+ *           SVG               *
+ *******************************/
 
 var DrawSVG = (function(){
 
+    // public attributes container
+    var self = {};
+    
+    // private variables
     var vbox = 200;   // viewbox side length
     var padding = 10; // between outer circle and viewbox edge
     var outer_circle = vbox / 2 - padding; // outer circle radius
@@ -175,16 +172,32 @@ var DrawSVG = (function(){
 
 
     var colors = ['red', 'green', 'yellow', 'blue', 'cyan', 'magenta', 'pink'];
+    var dark_colors = ['darkred', 'darkolivegreen', 'sandybrown', 'darkblue', 'cyan', 'magenta', 'pink'];
+    var light_colors = ['#FF8080', '#00FF00', '#FFFF80', '#8080FF', 
+    '#BFFFFF', '#FFBFFF', '#FFEBEE'];
 
     var draw = SVG('simon').size("100%", "100%").viewbox(0,0, vbox, vbox);
 
+    var nb_keys;
+    
+    // initialisation
     drawKeys(4);
+
+    self.reDrawKeys = function(nb) {
+        if ((nb < 8) && (nb > 2)) {
+            drawKeys(nb);
+        } else {
+            throw 'nb keys must be between 3 and 7';
+        }
+    };
    
     function touchedNoteStart(){
+        console.log(this);
         console.log('note jouée - début:', this.position());
         
         if (tip.hasClass("on")) {
-            Media.notes[this.position() - 1].play();
+            Media.notes[this.position()].play();
+            this.fill(light_colors[this.position()]);
         } else {
             powerMeOnMessage();
         }
@@ -192,7 +205,8 @@ var DrawSVG = (function(){
     
     function touchedNoteEnd(){
         console.log('note jouée - fin:', this.position());
-        Media.notes[this.position() - 1].stop();
+        Media.notes[this.position()].stop();
+       this.fill(colors[this.position()]);
     }
 
     function powerOn() {
@@ -230,13 +244,19 @@ var DrawSVG = (function(){
         }
     }
 
-    function drawKeys(nb_keys) {
+    function drawKeys(nb) {
         /* draw the key pads in circle */
        
-        var theta = Math.PI * 2 / nb_keys;
-   
+        console.log('debut:',  arcs === undefined);
+
+        if (arcs !== undefined) {
+            arcs.remove();
+        }
+        nb_keys = nb;
+        
+        var theta = Math.PI * 2 / nb;
+
         // circles path coordinates delimiting the game pads
-        // var touch_path = 'M' + center + ' ' + center/10 + 'A' + // starting point
         var touch_path = 'M' + center + ' ' + padding + 'A' + // starting point
             outer_circle  + ' ' + outer_circle + ' 0 0 1 ' +  // arc parameters
             (center + Math.sin(theta) * (center - padding)) +       //  "    "
@@ -247,19 +267,46 @@ var DrawSVG = (function(){
             center + ' ' + (center - inner_circle) + 'Z';         // for inner circle
    
         // creation of the first key pad
-        var dm_arc = draw.path(touch_path)
+        var arcs = draw.group();
+        var dm_arc = arcs.path(touch_path)
             .stroke({color: 'black', opacity: 1, width: 5 })
-            .fill(colors[0]).mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
+            // .fill(colors[0]).mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
+            .fill({color: colors[0], opacity: 1})
+            .mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
             .touchstart(touchedNoteStart).touchend(touchedNoteEnd)
             .style('cursor', 'pointer');
     
         // creation of the other key pads
-        for (var i = 1; i < nb_keys ; i++) {
-            dm_arc.clone().rotate(-i * 360 / nb_keys, center, center)
+        // for (var i = 1; i < nb ; i++) {
+        for (var i = nb - 1; i > 0 ; i--) {
+            dm_arc.clone().rotate(-i * 360 / nb, center, center)
                 .fill(colors[i]).mousedown(touchedNoteStart)
                 .mouseup(touchedNoteEnd).touchstart(touchedNoteStart)
                 .touchend(touchedNoteEnd);
         }
+        
+        /*
+        // creation of the first key pad
+        var dm_arc = draw.path(touch_path)
+            .stroke({color: 'black', opacity: 1, width: 5 })
+            // .fill(colors[0]).mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
+            .fill({color: colors[0], opacity: 1})
+            .mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
+            .touchstart(touchedNoteStart).touchend(touchedNoteEnd)
+            .style('cursor', 'pointer');
+    
+        // creation of the other key pads
+        // for (var i = 1; i < nb ; i++) {
+        for (var i = nb - 1; i > 0 ; i--) {
+            dm_arc.clone().rotate(-i * 360 / nb, center, center)
+                .fill(colors[i]).mousedown(touchedNoteStart)
+                .mouseup(touchedNoteEnd).touchstart(touchedNoteStart)
+                .touchend(touchedNoteEnd);
+        }
+        */
+        
+        console.log('fin:',  arcs === undefined);
+        // console.log('fin: draw has arcs', draw.has(arcs));
    
     }
      
@@ -315,4 +362,53 @@ var DrawSVG = (function(){
     strictButton.text('strict').font({size: 8}).move(-2.5, 11);
     strictButton.move(118, 95);
 
+    return self;
 })();
+
+// extra settings
+window.onload = function() {
+    var increaseKeys = document.getElementById('increaseKeys');
+    var decreaseKeys = document.getElementById('decreaseKeys');
+    var increaseLevel = document.getElementById('increaseLevel');
+    var decreaseLevel = document.getElementById('decreaseLevel');
+    var nbKeys = document.getElementById('nbKeys');
+    var level = document.getElementById('level');
+
+    /*
+    changeVal = function(direction, el, limit) {
+        var obj = document.gegElementById(el);
+        var elValue = parseInt(el.innerHTML);
+        console.log('dans changeVal', el, elValue, el.innerHTML);
+        if (direction === 'increase') {
+            if (elValue >= limit) {
+                console.log('message maximum atteint');
+            } else {
+                el.innerHTML = parseInt(elValue) + 1;
+            }
+        } else if (direction === 'decrease') {
+            if (elValue <= limit) {
+                console.log('message minimum atteint');
+            } else {
+                el.innerHTML = parseInt(elValue) - 1;
+            }
+        }
+    };
+    */
+   
+    increaseKeys.onclick = function() {
+        if (nbKeys.innerHTML >= 7) {
+            console.log('message: maximum atteint');
+        } else {
+            nbKeys.innerHTML = parseInt(nbKeys.innerHTML) + 1;
+            DrawSVG.reDrawKeys(nbKeys.innerHTML); 
+        }
+    };
+    decreaseKeys.onclick = function() {
+        if (nbKeys.innerHTML <= 3) {
+            console.log('message: minimum atteint');
+        } else {
+            nbKeys.innerHTML = parseInt(nbKeys.innerHTML) - 1;
+            DrawSVG.reDrawKeys(nbKeys.innerHTML); 
+        }
+    };
+};

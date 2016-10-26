@@ -1,10 +1,37 @@
 body  {
     background-color: lightgray;
 }
+svg {
+    /*shape-rendering: geometricPrecision;*/
+    shape-rendering: auto;
+}
 #simon {
     max-width: 600px;
     margin: auto;
 }
 .strictMode {
     stroke: #EC1100;
+}
+.lightpad {
+    background: red;
+    background: linear-gradient(to right, red, black);
+}
+#extra {
+    // max-width: 150px;
+    border: 1px solid black;
+    padding-left: 2px;
+}
+#extra h4, #extra p  {
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+.sign {
+    // font-weight: 900;
+    // font-size: 120%;
+    cursor: pointer;
+    padding: 4px;
+}
+.settingVal {
+    //font-size: 120%;
+    font-weight: bold;
 }
