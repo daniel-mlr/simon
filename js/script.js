@@ -7,7 +7,7 @@ var Media = (function() {
     self.notes = [];
     var instrument = 'sax';
     var gamut = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
-    // var gamut = ['c', 'd', 'e', 'f'];
+    
     for(var i=0, l = gamut.length; i<l; i++){
         self.notes.push(new Howl({
             src: [
@@ -19,6 +19,8 @@ var Media = (function() {
             loop: true
         }));
     }
+    
+    var crash = new Howl({src: ['media/MEGA_crash.wav']});
     
     // variables privées
    
@@ -44,12 +46,8 @@ var Media = (function() {
         }, note_duration);
     };
 
-    self.showMessage = function(message) {
-        console.log(message);
-    };
-
     self.buzzer = function() {
-        console.log('Buzzer ring!');
+        crash.play();
     };
     self.victory = function() {
         console.log('It\'s a victory!');
@@ -67,7 +65,7 @@ var Simon = (function() {
     // variables privées
     var setting = {
         nb_keys: 4,
-        difficulty: 5
+        difficulty: 10
     };
     var game_started = false;
     var song, currentChallenge, lengthPlayed;
@@ -75,17 +73,7 @@ var Simon = (function() {
     // initialise game
     initialise();
 
-    function initialise() {
-        song = generateSong(setting.difficulty);
-        console.log('song:', typeof song, song);
-        
-        currentChallenge = 1;
-        lengthPlayed = 0;
-    }
-   
-
     // méthodes publiques
-   
     self.startGame = function(){
         if (game_started) {
             console.log('rcommencer le jeu?');
@@ -116,13 +104,18 @@ var Simon = (function() {
         if (notePlayed === song[lengthPlayed]) { // note jouée correcte
             lengthPlayed += 1;
             if (lengthPlayed === currentChallenge) {
+                // attendre mouseup
                 console.log('currentChallenge atteint', currentChallenge);
                 currentChallenge += 1;
                 lengthPlayed = 0;
                 if (currentChallenge > song.length) {
                     Media.victory();
                 } else {
-                    Media.playSong(song.slice(0, currentChallenge), 1000, 200);
+                    setTimeout(function() {
+                        Media.playSong(song.slice(0, currentChallenge), 
+                                1000/Math.log(currentChallenge + 1), 
+                                200/currentChallenge);
+                    }, 1000);
                 }
             }
         } else {
@@ -142,7 +135,7 @@ var Simon = (function() {
         if (setting.difficulty > 2) {
             setting.difficulty -= 1; 
         } else {
-            Media.showMessage('Cannot go easier than that!');
+            alertify.error('Cannot go easier than that!');
         }
         return setting.dificulty;
     };
@@ -151,6 +144,7 @@ var Simon = (function() {
         if (setting.nb_keys < 7) {
             setting.nb_keys += 1;
             DrawSVG.reDrawKeys(setting.nb_keys); 
+            initialise();
         } else {
             alertify.error('The Maximum number of keys is 7.');
         }
@@ -160,6 +154,7 @@ var Simon = (function() {
         if (setting.nb_keys > 3) {
             setting.nb_keys -= 1;
             DrawSVG.reDrawKeys(setting.nb_keys); 
+            initialise();
         } else {
             alertify.error('The minimum number of keys is 3.');
         }
@@ -167,6 +162,14 @@ var Simon = (function() {
     };
 
     // méthodes privées
+    function initialise() {
+        song = generateSong(setting.difficulty);
+        console.log('song:', typeof song, song);
+        
+        currentChallenge = 1;
+        lengthPlayed = 0;
+    }
+   
     function generateSong(len) {
         var s = '';
         while(len) {
@@ -224,7 +227,6 @@ var DrawSVG = (function(){
     };
 
     self.turnOnLightKey = function(nkey){
-        console.log('a allumer, clé', nkey, arcs.get(nkey));
         arcs.get(nkey).fill(light_colors[nkey]);
     };
     
@@ -233,9 +235,6 @@ var DrawSVG = (function(){
     };
    
     function touchedNoteStart(){
-        console.log(this);
-        console.log('note jouée - début:', this.position());
-        
         if (tip.hasClass("on")) {
             Media.notes[this.position()].play();
             this.fill(light_colors[this.position()]);
@@ -245,11 +244,9 @@ var DrawSVG = (function(){
     }
     
     function touchedNoteEnd(){
-        console.log('note jouée - fin:', this.position());
         Media.notes[this.position()].stop();
         this.fill(colors[this.position()]);
         Simon.playNote(this.position());
-        console.log('je sors de Simon');
     }
 
     function powerOn() {
@@ -382,27 +379,6 @@ window.onload = function() {
     var decreaseLevel = document.getElementById('decreaseLevel');
     var nbKeys = document.getElementById('nbKeys');
     var level = document.getElementById('level');
-
-    /*
-    increaseKeys.onclick = function() {
-        if (nbKeys.innerHTML >= 7) {
-            console.log('message: maximum atteint');
-            alertify.error("Maximum number of keys is 7");
-        } else {
-            nbKeys.innerHTML = parseInt(nbKeys.innerHTML) + 1;
-            DrawSVG.reDrawKeys(nbKeys.innerHTML); 
-        }
-    };
-    decreaseKeys.onclick = function() {
-        if (nbKeys.innerHTML <= 3) {
-            console.log('message: minimum atteint');
-            alertify.error("Minimum number of keys is 3");
-        } else {
-            nbKeys.innerHTML = parseInt(nbKeys.innerHTML) - 1;
-            DrawSVG.reDrawKeys(nbKeys.innerHTML); 
-        }
-    };
-    */
     increaseKeys.onclick = function(){nbKeys.innerHTML = Simon.incrementKeys();};
     decreaseKeys.onclick = function(){nbKeys.innerHTML = Simon.decrementKeys();};
 };
