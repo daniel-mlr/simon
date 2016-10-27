@@ -6,7 +6,7 @@ var Media = (function() {
 
     self.notes = [];
     var instrument = 'sax';
-    var gamut = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
+    var gamut = ['c', 'd', 'e', 'f', 'g', 'a', 'b', 'c1'];
     
     for(var i=0, l = gamut.length; i<l; i++){
         self.notes.push(new Howl({
@@ -16,7 +16,11 @@ var Media = (function() {
                 'media/' + instrument + '-' + gamut[i] + '.webm', 
             ],
             autoplay: false,
-            loop: true
+            loop: true,
+            /* à réparer (probleme: DrawSVG pas encore défini
+            onplay: DrawSVG.turnOnLightKey,
+            onstop: DrawSVG.turnOffLightKey,
+            */
         }));
     }
     
@@ -46,6 +50,21 @@ var Media = (function() {
         }, note_duration);
     };
 
+    self.playGamut = function() {
+        var i = 0;
+        function playSound (){
+            console.log('note', i, 'va jouer');
+            if (i > 7) {return; }
+            self.notes[i++].play();
+            setTimeout(function(){
+                console.log('note', (i - 1), 'va stopper');
+                self.notes[i - 1].stop();
+                playSound();
+            }, 100);
+        }
+        playSound();
+    };
+
     self.buzzer = function() {
         crash.play();
     };
@@ -65,10 +84,12 @@ var Simon = (function() {
     // variables privées
     var setting = {
         nb_keys: 4,
-        difficulty: 10
+        difficulty: 6,
+        strict_mode: false,
     };
     var game_started = false;
-    var song, currentChallenge, lengthPlayed;
+    var song, currentChallenge, lengthPlayed; 
+    var success = false;
 
     // initialise game
     initialise();
@@ -76,8 +97,8 @@ var Simon = (function() {
     // méthodes publiques
     self.startGame = function(){
         if (game_started) {
-            console.log('rcommencer le jeu?');
-            alertify.confirm('This will reinitialise the game', function(e) {
+            console.log('recommencer le jeu?');
+            alertify.confirm( 'This will reinitialise the game', function(e) {
                 if (e) {
                     initialise();
                     Media.playSong(song.slice(0, currentChallenge), 1000, 200);
@@ -89,6 +110,59 @@ var Simon = (function() {
         }
     };
    
+    self.startNote = function(note_id) {
+       
+        if (!game_started) {
+            alertify.alert('Press the red button \'start\' to begin the game');
+            return;
+        }
+        
+        note_id = note_id.toString();
+        
+        if (note_id === song[lengthPlayed]) { // note jouée correcte
+            DrawSVG.turnOnLightKey(note_id);
+            Media.notes[note_id].play();
+            success = true;
+            DrawSVG.showScore(++lengthPlayed);
+
+        } else {
+            Media.buzzer();
+            var nb_flash = 0;
+            var flashing = setInterval(function() {
+                if (++nb_flash === 5) { clearInterval(flashing);}
+
+            }, 300);
+            if (setting.strict_mode) {
+                // initialise
+            } else {
+            }
+            lengthPlayed = 0;
+        }
+    };
+  
+    self.releaseNote = function(note_id) {
+        DrawSVG.turnOffLightKey(note_id);
+        Media.notes[note_id].stop();
+        if (success) {
+            if (lengthPlayed === currentChallenge) {
+                // attendre mouseup
+                console.log('currentChallenge atteint', currentChallenge);
+                currentChallenge += 1;
+                lengthPlayed = 0;
+                if (currentChallenge > song.length) {
+                    Media.victory();
+                } else {
+                    setTimeout(function() {
+                        Media.playSong(song.slice(0, currentChallenge), 
+                                1000/Math.log(currentChallenge + 1), 
+                                200/currentChallenge);
+                    }, 1000);
+                }
+            }
+        }
+    };
+    
+    /*
     self.playNote = function(notePlayed) { 
         // input: note just keyed
         // increase challenge and announce it if notePlayed is correct
@@ -125,6 +199,7 @@ var Simon = (function() {
         }
         return;
     };
+    */
     
     self.incrementDifficulty = function() {
         setting.difficulty += 1; 
@@ -150,6 +225,7 @@ var Simon = (function() {
         }
         return setting.nb_keys;
     };
+   
     self.decrementKeys = function() { 
         if (setting.nb_keys > 3) {
             setting.nb_keys -= 1;
@@ -160,12 +236,15 @@ var Simon = (function() {
         }
         return setting.nb_keys;
     };
+    
+    self.switchStrictMode = function(on){
+        setting.strict_mode = (on) ? true: false;
+    };
 
     // méthodes privées
     function initialise() {
         song = generateSong(setting.difficulty);
         console.log('song:', typeof song, song);
-        
         currentChallenge = 1;
         lengthPlayed = 0;
     }
@@ -233,27 +312,65 @@ var DrawSVG = (function(){
     self.turnOffLightKey = function(nkey){
         arcs.get(nkey).fill(colors[nkey]);
     };
+
+    self.turnOffAllLights = function() {
+        // rendre les touches en echelons de gris
+    };
    
+    self.showScore = function(score){
+        // 2 digit format for the score led indicator
+        score_digits.text(("0" + score).slice(-2));
+    };
+    
+    // self.showScoreLight = function(on){
+    //     // turn on and off the score digits
+    //     led = (on) ? led_on : led_off;
+    //     score_digits.stroke({color: led}).fill(led);
+    // };
+    
+    self.flashDigitScore = function(score) {
+        self.showScore(score);
+        var nb_flash = 0;
+        var flashing = setInterval(function() {
+            if (++nb_flash === 5) { clearInterval(flashing); }
+            led = (nb_flash % 2) ? led_on: led_off;
+            score_digits.stroke({color: led}).fill(led);
+        }, 200);
+    };
+
     function touchedNoteStart(){
         if (tip.hasClass("on")) {
+            Simon.startNote(this.position());
+            /*
             Media.notes[this.position()].play();
             this.fill(light_colors[this.position()]);
+            */
         } else {
             powerMeOnMessage();
         }
     }
     
     function touchedNoteEnd(){
+        var note = this.position();
+        setTimeout(function() {
+            // prevent bouncing 
+            Simon.releaseNote(note);
+        }, 100);
+        
+        /*
         Media.notes[this.position()].stop();
         this.fill(colors[this.position()]);
         Simon.playNote(this.position());
+        */
     }
 
     function powerOn() {
         console.log('Je joue une petite musique de bienvenue');
+        Media.playGamut();
         score_digits.stroke({color: led_on}).fill(led_on);
         // pour test
-        score_digits.text('88');
+        self.flashDigitScore('00');
+        // score_digits.text('00');
     }
 
     function powerOff() {
@@ -304,15 +421,17 @@ var DrawSVG = (function(){
             .stroke({color: 'black', opacity: 1, width: 5 })
             .fill({color: colors[0], opacity: 1})
             .mousedown(touchedNoteStart).mouseup(touchedNoteEnd)
-            .touchstart(touchedNoteStart).touchend(touchedNoteEnd)
+            // problème à régler avec combinaison touch et click
+            // .touchstart(touchedNoteStart).touchend(touchedNoteEnd)
             .style('cursor', 'pointer');
     
         // creation of the other key pads
         for (var i = nb - 1; i > 0 ; i--) {
             dm_arc.clone().rotate(-i * 360 / nb, center, center)
-                .fill(colors[i]).mousedown(touchedNoteStart)
-                .mouseup(touchedNoteEnd).touchstart(touchedNoteStart)
-                .touchend(touchedNoteEnd);
+                .fill(colors[i])
+                // problème à régler avec combinaison touch et click
+                // .touchstart(touchedNoteStart).touchend(touchedNoteEnd)
+                .mousedown(touchedNoteStart).mouseup(touchedNoteEnd);
         }
     }
      
