@@ -100,20 +100,26 @@ var Simon = (function() {
     var success = false;
 
     // initialise game
-    initialise();
+    // initialise();
 
     // méthodes publiques
+   
+    self.initialise = function() {
+        song = generateSong(setting.difficulty);
+        console.log('song:', typeof song, song);
+        currentChallenge = 1;
+        lengthPlayed = 0;
+        console.log('song apres initialisation', song);
+    };
+    
     self.startGame = function(){
         if (game_started) {
-            askReinitialise();
-            /*
             alertify.confirm( 'This will reinitialise the game', function(e) {
                 if (e) {
-                    initialise();
+                    self.initialise();
                     Media.playSong(song.slice(0, currentChallenge), 1000, 200);
                 }
             });
-            */
         } else {
             game_started = true;
             Media.playSong(song.slice(0, currentChallenge), 1000, 200);
@@ -156,6 +162,7 @@ var Simon = (function() {
                 lengthPlayed = 0;
                 if (currentChallenge > song.length) {
                     Media.victory();
+                    DrawSVG.flashDigitScore(song.length);
                     game_started = false;
                 } else {
                     setTimeout(function() {
@@ -192,34 +199,11 @@ var Simon = (function() {
             alertify.error('Cannot go easier than that!');
         } else {
             setting.difficulty -= 1; 
+            console.log('decremente setting.difficulty a ', setting.difficulty);
         }
         return setting.difficulty;
     };
 
-    /*
-    self.incrementKeys = function() { 
-        var validate = function() {
-            if (setting.nb_keys < 7) {
-                nbKeys.innerHTML = ++setting.nb_keys;
-                DrawSVG.reDrawKeys(setting.nb_keys); 
-                initialise();
-            } else {
-                alertify.error('The Maximum number of keys is 7.');
-            }
-        };
-        if (game_started) {
-            askReinitialise(validate);
-        } else {
-            validate();
-        }
-    };
-    */
-    function mustPowerOff(){
-        alertify.alert('You must turn power off ' + 
-                'before changing those settings ' +
-                'or you risk being electrocuted.');
-    }
-    
     self.incrementKeys = function() { 
         if (DrawSVG.power) {
             mustPowerOff();
@@ -246,26 +230,31 @@ var Simon = (function() {
         setting.strict_mode = (on) ? true: false;
     };
 
+    self.generateIntroMusic = function () {
+        var ret = '';
+        for (var i=0; i<3; i++){
+            ret += '01234567'.slice(0, setting.nb_keys);
+        }
+        console.log('ret:', ret);
+        return ret;
+    };
+    
+    self.debug = function(){
+        console.log('setting', setting);
+        console.log('song:', song);
+    };
     // méthodes privées
     
-    function initialise() {
-        song = generateSong(setting.difficulty);
-        console.log('song:', typeof song, song);
-        currentChallenge = 1;
-        lengthPlayed = 0;
-    }
-   
-    function askReinitialise(othermethod) {
-        alertify.confirm( 'This will reinitialise the game', function(e) {
-            if (e) {
-                if (othermethod) othermethod();
-                initialise();
-                Media.playSong(song.slice(0, currentChallenge), 1000, 200);
-            }
-        });
+    function mustPowerOff(){
+        alertify.alert('You must turn power off ' + 
+                'before changing those settings ' +
+                'or you risk being electrocuted.');
     }
     
+   
     function generateSong(len) {
+        /* generate a string of random number with lenght *len*
+         * and upper limit *setting.nb_keys* */
         var s = '';
         while(len) {
             s += Math.floor(Math.random() * setting.nb_keys);
@@ -273,6 +262,7 @@ var Simon = (function() {
         }
         return s;
     }
+
 
     return self;
 })();
@@ -299,9 +289,10 @@ var DrawSVG = (function(){
 
 
     var colors = ['red', 'green', 'yellow', 'blue', 'cyan', 'magenta', 'pink'];
-    var dark_colors = ['darkred', 'darkolivegreen', 'sandybrown', 'darkblue', 'cyan', 'magenta', 'pink'];
+    var dark_colors = ['darkred', 'darkolivegreen', 'sandybrown', 'darkblue',
+        'cyan', 'magenta', 'pink'];
     var light_colors = ['#FF8080', '#00FF00', '#FFFF80', '#8080FF', 
-    '#BFFFFF', '#FFBFFF', '#FFEBEE'];
+        '#BFFFFF', '#FFBFFF', '#FFEBEE'];
 
     var draw = SVG('simon').size("100%", "100%").viewbox(0,0, vbox, vbox);
 
@@ -344,7 +335,7 @@ var DrawSVG = (function(){
         self.showScore(score);
         var nb_flash = 0;
         var flashing = setInterval(function() {
-            if (++nb_flash === 5) { clearInterval(flashing); }
+            if (++nb_flash === 7) { clearInterval(flashing); }
             led = (nb_flash % 2) ? led_on: led_off;
             score_digits.stroke({color: led}).fill(led);
         }, 200);
@@ -363,17 +354,18 @@ var DrawSVG = (function(){
         setTimeout(function() {
             // prevent bouncing 
             Simon.releaseNote(note);
-        }, 100);
+        }, 20);
         
     }
 
     function powerOn() {
         console.log('Je joue une petite musique de bienvenue');
-        //Media.playGamut();
-        Media.playSong('024202420', 100, 10);
+        // Media.playSong('024202420', 100, 10);
+        Media.playSong(Simon.generateIntroMusic(), 100, 10);
         score_digits.stroke({color: led_on}).fill(led_on);
         self.flashDigitScore('00');
         self.power = true;
+        Simon.initialise();
     }
 
     function powerOff() {
