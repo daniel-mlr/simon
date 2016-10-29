@@ -3,7 +3,7 @@ body  {
 }
 svg {
     /*shape-rendering: geometricPrecision;*/
-    shape-rendering: auto;
+    shape-rendering: auto; /* not working? */
 }
 #simon {
     max-width: 600px;
@@ -17,7 +17,6 @@ svg {
     background: linear-gradient(to right, red, black);
 }
 #extra {
-    // max-width: 150px;
     border: 1px solid black;
     padding-left: 2px;
 }
@@ -26,12 +25,9 @@ svg {
     margin-bottom: 3px;
 }
 .sign {
-    // font-weight: 900;
-    // font-size: 120%;
     cursor: pointer;
     padding: 4px;
 }
 .settingVal {
-    //font-size: 120%;
     font-weight: bold;
 }
