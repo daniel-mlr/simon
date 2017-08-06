@@ -6,7 +6,7 @@ svg {
     shape-rendering: auto; /* not working? */
 }
 #simon {
-    max-width: 600px;
+    max-width: 550px;
     margin: auto;
 }
 .strictMode {

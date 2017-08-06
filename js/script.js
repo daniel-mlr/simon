@@ -182,13 +182,28 @@ var Simon = (function() {
     };
     
     self.decrementDifficulty = function() {
+        var mess = [
+            'C\'mon, that\'s way too easy for you!',
+            'Sorry, cannot go easier than that!'
+        ];
         if (DrawSVG.power) {
             mustPowerOff();
+        } else {
+            switch (setting.difficulty) {
+                case 5: alertify.error(mess[0]); setting.difficulty--; break;
+                case 3: alertify.error(mess[1]); break;
+                default: setting.difficulty--;
+            }
+        }
+        /*
         } else if (setting.difficulty < 4) {
-            alertify.error('Cannot go easier than that!');
+            alertify.error('Sorry, cannot go easier than that!');
+        } else if (setting.difficulty == 5) {
+            alertify.error('C\'mon, that\'s way too easy for you!');
         } else {
             setting.difficulty -= 1; 
         }
+        */
         return setting.difficulty;
     };
 
@@ -198,7 +213,7 @@ var Simon = (function() {
         } else if (setting.nb_keys < 7) {
             DrawSVG.reDrawKeys(++setting.nb_keys); 
         } else {
-            alertify.error('The Maximum number of keys is 7.');
+            alertify.error('Sorry, no more room for another key.');
         }
         return setting.nb_keys;
     };
@@ -209,7 +224,7 @@ var Simon = (function() {
         } else if (setting.nb_keys > 3) {
             DrawSVG.reDrawKeys(--setting.nb_keys); 
         } else {
-            alertify.error('The minimum number of keys is 3.');
+            alertify.error('You don\'t want the whole toy disappear, do you?');
         }
         return setting.nb_keys;
     };
@@ -363,9 +378,9 @@ var DrawSVG = (function(){
     
     function touchedNoteEnd(){
         var note = this.position();
-        setTimeout(function() {
+        // setTimeout(function() {
             Simon.releaseNote(note);
-        }, 20);  // prevent bouncing 
+        // }, 20);  // prevent bouncing 
         
     }
 
